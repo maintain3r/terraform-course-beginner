@@ -10,6 +10,7 @@ Allow the creation of multiple resources of the same type without having to decl
 
 #### provider
 Allows defining explicitly which provider to use with a specific resource.
+This meta argument can be ued in any `resource` or `data` block.
 
 ### Lifecycle
 The following attributes are part of lifecycle contruction of TF with its own purpose. 
