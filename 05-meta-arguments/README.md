@@ -34,3 +34,28 @@ The following attributes are part of lifecycle contruction of TF with its own pu
 
 - #### ignore_changes
   We can provide a list of attributes that should not trigger an update when modified outside Terraform.
+
+
+In the following example you see `aws_launch_configuration` LaunchConfiguration definition which is referenced by ASG.
+The thing is, aws_launch_configuration is immutable and in case you add any change to it TF will try to delete it and replace it with another one.
+And this is the standard behavior of TF. And here's a chicken-egg problem. Since the old LaunchConfig is used by the ASG, TF wont be able to remowe it and will fail.
+To overcome the issue, this config uses `create_before_destroy` meta argument specified in `lifecycle` block.
+This setting instructs TF to create a new LaunchConfig first, replace the reference to a new one i nthe ASG and then destroy the old LaunchConfig.
+ 
+```
+resource "aws_launch_configuration" "example" {
+  image_id = "ami-0fb653ca2d3203ac1"
+  instance_type = "t2.micro"
+  security_groups = [aws_security_group.instance.id]
+  user_data = <<-EOF
+        #!/bin/bash
+	echo "Hello, World" > index.xhtml
+	nohup busybox httpd -f -p ${var.server_port} &
+	EOF
+
+  # Required when using a launch configuration with an auto scaling group.
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+```
