@@ -52,5 +52,19 @@ resource "aws_instance" "web" {
 }
 ```
 
-This is a bit different from a when we reference a resource, where we don't specify resource.resource_type_reference_name.id,
-but we simply specify `resource_type.reference_name.id`.
+To get the data out of a data source, you use the following attribute reference syntax:
+### data.<PROVIDER>_<TYPE>.<NAME>.<ATTRIBUTE>
+For example, to get the ID of the VPC from the aws_vpc data source, you would use the following: `data.aws_vpc.default.id`
+You can combine this with another data source, aws_subnets, to look up the subnets within that VPC:
+```
+data "aws_vpc" "default" {
+  default = true  checks for default vpc
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+```
