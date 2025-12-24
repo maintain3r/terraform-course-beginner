@@ -1,0 +1,5 @@
+Since all variable in prod and dev environments have the same name, running terraform with dev.terraform.tfvars and then prod.terraform.tfvars files
+will confuse TF as it will see the changes in variable values as a change to apply to same infra.
+There's a way to takle that by using TF Workspaces which will be explained in the future exercises.
+Te reason of using 2 different files with values for prod and dev is to only show that TF does not apply those values automatically as both files are not named as terraform.tfvars nor *.auto.tfvars.
+Also the reason was to show that passing different values from different env files may confuse TF.

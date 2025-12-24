@@ -16,7 +16,16 @@ Used for:
   -var 'varame=value'
   -var-file=filename
 
-Here’s the syntax for declaring a variable in a `*.tf` file, usually it's named as `variables.tf`:
+###NOTE
+TF does not automatically load some_name.tfvars file, for this you should pass the file explicitly using `-var-file` param in cli.
+TF automatically loads variable values from `terraform.tfvars` file.
+
+
+
+
+Here’s the syntax for declaring a variable in a `*.tf` file, usually it's named as `variables.tf`.
+We define variable name and its config specifying its type, default value, description, validation, etc
+But to pass a value to this variable we use all variations mentioned above.
 ```
 variable "NAME" {
    [CONFIG ...]
