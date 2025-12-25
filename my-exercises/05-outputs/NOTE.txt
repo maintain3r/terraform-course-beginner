@@ -1,0 +1,28 @@
+### Ooutputs
+Outputs are a way to expose data about your resources and modules, and can be very helpful in understanding the state of your resources or for integrating with other systems. 
+It's a good practive to move `outputs` into a separate file.
+```
+output "name" {
+  description = ""
+  value       = ""
+}
+```
+
+To retrieve the output value outside terraform, run the command `terraform output output_name`.
+The outputs can be pulled into cli and what's more interesting, outputs from modules can be retrieved by root TF project, and they can also be used as inputs to other modules.
+You can read the output value of another project and use it as an input variable to your project.
+For example you have a project that manages your VPC and this project has some Outputs that contain some useful information that you'd like to use in another project, say RDS.
+Now, in RDS project directory when your run `terraform apply` you can pass it some input parameters and those parameters you can fetch from the other project's output section by 
+specifying the state file of VPC project using `-state` cli param.
+
+Example of using outpus:
+$ terraform output s3_bucket_name              - print output called `s3_bucket_name` in quotes
+$ terraform output -raw s3_bucket_name         - pring output called `s3_bucket_name` without quotes
+$ curl $(terraform output -raw s3_bucket_name) - connects to the bucket retrieved from TF outputs
+
+Retrieve output named `list_of_objects_element_0_name` from another project and make it as an rgument to 'echo' linux cmd.
+~/terraform-course-beginner/my-exercises/05-outputs (main)$ echo "My name is $(terraform output -raw -state ../03-variables.tf/terraform.tfstate list_of_objects_element_0_name)"
+My name is Rossey
+
+If your backend is S3 you can retrieve some values output values from a project and use it for CI/CD for example.
+The description you set to your output can't be retrieved from the command line.
