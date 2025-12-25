@@ -116,7 +116,8 @@ path    = "example_app/terraform_state"
 scheme  = "https"
 ```
 
-*.backendname.tfbackend (e.g. config.consul.tfbackend) is the recommended naming pattern. Terraform will not prevent you from using other names but following this convention will help your editor understand the content and likely provide better editing experience as a result.
+*.backendname.tfbackend (e.g. config.consul.tfbackend) is the recommended naming pattern.
+Terraform will not prevent you from using other names but following this convention will help your editor understand the content and likely provide better editing experience as a result.
 Command-line key/value pairs
 
 The same settings can alternatively be specified on the command line as follows:
@@ -130,7 +131,7 @@ The Consul backend also requires a Consul access token.
 Per the recommendation above of omitting credentials from the configuration and using other mechanisms, the Consul token would be provided by setting either the CONSUL_HTTP_TOKEN or CONSUL_HTTP_AUTH environment variables. 
 See the documentation of your chosen backend to learn how to provide credentials to it outside of its main configuration.
 
-Change configuration
+### Change configuration
 You can change your backend configuration at any time. 
 You can change both the configuration itself as well as the type of backend (for example from "consul" to "s3").
 Terraform will automatically detect any changes in your configuration and request a reinitialization. As part of the reinitialization process, 
@@ -167,10 +168,11 @@ This will check all your *.tf files in your working dir (in this case random.tf)
 As it was said above, the plan will also contain the backend config so that TF knows where to save the information about the latest state of your infra regardless of what backend is the most recent.
 This means that TF does not use the most recent config of the backend you configured after the terraform plan command, it uses the one that was known at the moment the plan was created.
 In this case, you can even create a plan and store it in a different file that you may want to execute later after checking everything it plans to change in your infra.
-$ `terraform plan -out myplan` will create a plan file and store everything it wants to change in your infra. Also, it will add  backend configuration at the time of creating this plan into the same file myplan.
+$ `terraform plan -out myplan` will create a plan file and store everything it wants to change in your infra. Also, it will add backend configuration at the time of creating this plan into the same file 'myplan'.
+You can even open file 'myplan', it's an archive container file that you can open and see whta files it contains.
 
 You can check what TF wants to modify in your infra before you actually apply it.
-$ `terraform show myplan` shows the content of myplan file (you can't just open it using smth like "cat" cmd, as it's a bin format_.
+$ `terraform show myplan` shows the content of myplan file (you can't just open it using smth like "cat" cmd, you open it as archive).
 $ `terraform apply myplan` will apply your plan
                            
 Let's say we run terraform plan and then apply to create what we need.
@@ -182,7 +184,7 @@ random.tf
 terraform.tfstate
 ```
 
-Now let's add loca type backed config explicitly specifying the path argument of it.
+By default the backend is local, but we'll add it explicitly to customize it a bit by adding the `path` argument.
 We'll add backend section with empty path argument in random.tf file and create a config file with path and value.
 ```
 $ cat /tmp/TF/random.tf 
@@ -213,31 +215,36 @@ cat /tmp/TF/config.local.tfbackend
 path="aaa.tfstate"
 ```
 
-$ terraform init -backend-config="config.local.tfbackend" - will configure local backend so that it store TF state files in aaa.tfstate file.
-The new config of local backend will be saved in the .terraform/tfstate file.
+$ terraform init -backend-config="config.local.tfbackend" - will configure local backend so that it stores TF state files in aaa.tfstate file.
+The new config of local backend will be saved in the .terraform/terraform.tfstate file.
 
-If there was a state file with data in it TF will ask if you want to migrate the current state data into the new location/file.
-$ terraform init -backend-config="config.local.tfbackend" -migrate-state - will migrate state data from the last known state file which in our case terraform.tfstate into aaa.tfstate.
+If there was a state file with data in it TF would ask if you want to migrate the current state data into the new location/file.
+`$ terraform init -backend-config="config.local.tfbackend" -migrate-state` - will migrate state data from the last known state file which in our case terraform.tfstate into aaa.tfstate.
 
-But imagine you didn't specify -migrate-state argument and only updated the backed config.
-TF will update the .terraform/terraform.tfstate file with the new settings but there will be no aaa.tfstate file created.
+But imagine you didn't specify `-migrate-state` argument and only updated the backed config (TF would update the settings in `.terraform/terrafoprm.tfstate` file).
+TF will update the `.terraform/terraform.tfstate` file with the new settings, but there will be no aaa.tfstate file created in the project root directory.
 If you ask TF to show you what it knows abouit your infra by running `terraform state list` it's gonna complain that it has no state.
-Remember, you didn't migrate yoru state data from the previous state file.
+Remember, you didn't migrate your state data from the previous state file.
 Now if you apply the plan file 'myplan' you generated earlier:
 $ `teraform apply myplan` TF will apply this plan and update terraform.tfstate file since this setting was burned into myplan file. 
 Remember TF backend config was pointing to terraform.tfstate file when we generated myplan file.
-There will be no aaa.tfstate file generated in the workign dir, since we aplied a pan that didn't know anythign about aaa.tstate. We reconfigured our local backend after we created myplan plan.
+There will be no aaa.tfstate file generated in the workign dir, since we applied a plan that didn't know anythign about aaa.tstate. We reconfigured our local backend after we created myplan plan.
 
-This is a result of you not migrating the current state after modifying the backend and initializing TF. SImply speakign you didn;t specify '-migrate-state' option.
-What TF knows about the state - nothing, as aaa.tfstate doe snot exist in workin dir even if backend configuration (.terraform/tfstate) says that the state file is aaa.tfstate.
-If you run `terraform plan` and then `teraform appl` TF will generate a plan based on random.tf and apply it.
+This is a result of you not migrating the current state after modifying the backend and initializing TF. 
+Simply speakign you didn't specify '-migrate-state' option, which is like you don;t care what was the previous state of your infra.
+What TF knows about the state - nothing, as aaa.tfstate doe snot exist in working dir even if backend configuration (.terraform/tfstate) says that the state file is aaa.tfstate.
+If you run `terraform plan` and then `teraform apply` TF will generate a plan based on random.tf and apply it.
 Once applied, you'll see your changes and the file aaa.tfstate will be generated.
 
+```
+### Remember, if you have a `terraform.tfstate` representing the most up to date information about your infra, make sure you migrate the data from this file to a new backend before you apply any changes to your infra!!!
+### This is a critical part that you always have to check while migrating from one backend type to another, otherwise it may lead to unpredicted results in your infra!!!
+```
 Backend and TF state file should be consistent, pay attention to that, especially when you migrate from one backend to another.
 Some times it may require you to perform a manual state file transition.
 
 And finally, locking.
-In order to avoid any chaos working with TF in a team where multiple people want to sbmit their changes, TF has a locking mechanism built in.
+In order to avoid any chaos working with TF in a team where multiple people want to submit their changes, TF has a locking mechanism built in.
 This prevents bad things from happennign like state file inconsistency, corruption or mess in the infra.
 The recent version of S3 backend implementation allows you to specify a bool parameter that if is set to `true` will create a lock file in you s3 bucket when a user runs terraform plan cmd.
 Only after user executes its plan, TF will remove the locking file which will allow next user to plan and apply his changes. So, really useful.

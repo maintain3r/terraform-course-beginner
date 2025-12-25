@@ -1,0 +1,38 @@
+## Sensitive values
+Variable and Output constructs have a boolean parameter 'sensitive', which by default is set to false.
+This param is used for hiding some sennsitive information that's printed on your screen while you work with TF.
+For example when you run `terraform plan` or `terraform apply` TF generates some output text where some information is visible.
+Example:
+```
+variable "api_token" {
+  type = string
+  description = "Security API token"
+}
+
+output "api_token_output" {
+  value       = var.api_token
+  description = "API token used to access data platform"
+  sensitive   = true
+}
+
+Now, running terraform plan or terraform apply, you'll see that api_token_output does not show any visible and human readable value.
+
+Outputs:
+
+api_token_output = <sensitive>
+```
+But if you explicitly retrieve the value of 'api_token_output' output by running `terraform output api_token_output`, you'll see the raw value that you stored in 'api_token' variable.
+This information is also stored in raw and visible format in terraform.tfstate file.
+In the example above, "api_token" variable has no parameter `sensitive` set. When it's nto set it's value is false by default.
+Setting it to true for value like below will require yout to set 'sensitive' param to true in output section as well, otherwise TF will throw an error. 
+```
+variable "api_token" {
+  type        = string
+  sensitive   = true
+  description = "Security API token"
+}
+```
+
+The thing is even if you set sentsitive to true in output and invariable, TF may not necessarily hide this value in terraform.tfstate file, and th value may still be stored as plain text.
+Just be aware. This is the reason to protect your terraform.tfstate file in a secure place.
+For sensitive variable that has not value set and relies on user input, TF will ask you for the value when you run plan/apply cmds and while you type a value in your terminal the value will be hidden.

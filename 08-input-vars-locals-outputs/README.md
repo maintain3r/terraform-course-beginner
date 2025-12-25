@@ -210,14 +210,17 @@ Locals provide a way to define a variable that can be reused within your module 
 Locals can't be set explicitly from th outside as a variable.
 Locals can be any other supported type and can be referenced by other parts of your TF config.
 Locals can be put in its own file, e.g. `locals.tf` and there's no such a thing like importing locals from another *.tf config file as long as all files are in the same directory.
-If you try to pass a value to a variable defined `local` block and if there's no reular variable in your project with the same name, you'll get an error:
+You just reference the local variables in your output, resoruces, data sources. Locals can have hardcoded values or reference variables for the values.
+Locals are used like internal variables in a function like in c/c++ when you implement a sorting algorithm you use some local to your function variables to store some
+values while your function performs an action. Locals in TF can be used to more for different cases especially when they are used with terraform built-in functions.
+If you try to pass a value to a variable defined in the `locals` block and if there's no regular variable in your project with the same name, you'll get an error:
 
 $ terraform plan -var 'common_tags="{bu="QAZ"}"'
 Error: Value for undeclared variable
 │
 │ A variable named "common_tags" was assigned on the command line, but the root module does not declare a variable of that name. To use this value, add a "variable" block to the configuration.
 
-In this case, `common_tags` is a local variabel and there's no regular variable with the same name, which is why TF throws an error.
+In this case, `common_tags` is a local variable and there's no regular variable with the same name, which is why TF throws an error.
 
 ### Outputs
 Outputs are a way to expose data about your resources and modules, and can be very helpful in understanding the state of your resources or for integrating with other systems.
