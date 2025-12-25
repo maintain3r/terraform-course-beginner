@@ -162,3 +162,59 @@ variable "ec2_instance_type" {
   }
 }
 ```
+
+### Working with *.auto.tfvars
+TF does not apply values from files with values for each variable automatically as in the previous example with dev.terraform.tfvars and prod.terraform.tfvars file.
+TF automatically finds nd reads variable values from files named as terraform.tfvars or *.auto.tfvars.
+Note that `*.auto.tfvars` will override `terraform.tfvars`.
+
+In this example the prod.auto.tfvars files are automatically loaded by Terraform when it runs.
+The values in the *.auto.tfvars files override the values in the terraform.tfvars file.
+This means that if you have the same variable defined in both the terraform.tfvars file and an *.auto.tfvars file, the value from the *.auto.tfvars file will be used.
+
+If you have more than 1 `*.auto.tfvars` fil ein your project directory, TF will sort the `*.auto.tfvars` filenames in alphabetical order,
+and the filename that goes first gets overriden by the file that goes after it.
+As an example, if we create 2 auto files - dev.auto.tfvars and prod.auto.tfvars files, dev filename goes first, then TF finds another auto file and it overrides the variables
+that were in dev and now in prod auto file. This is an example of how you should avoid doing.
+
+There might be another example where you have all your variables in `terraform.tfvars` file, but some of the variables are overriden in *.auto.tfvars file.
+
+E.g.
+```
+$ cat terraform.tfvars
+instance_type = "t2.micro"
+image_id      = "11111111"
+tags = {
+        banagedBy = "TF"
+}
+
+$ cat prod.auto.tfvars
+image_id      = "77777777"
+```
+If ou run terraform plan cmd you'll see that TF grabs `instance_type` and `tags` from terraform.tfvars file but `image_id` is "7777777".
+Here's how its logic works:
+- TF goes with the order of precedence from high -> low. `*.auto.tfvars` is higher than `terraform.tfvars`, it reads what it finds in it - in this case `image_id = "77777777"`.
+  There's no other variable in this file.
+- TF moves forward with checking for other variables in any other source and finds `terraform.tfvars` file, it reads every variable that TF didn't see in the revius file `*.auto.tfvars`,
+  and again, following the variable precedence order. TF reads variable `instance_type`, `tags`, but it ignores the variable `image_id` as it has seen it coming from a more preferred source - `*.auto.tfvars.`
+
+If for some reason you have same variable you repeat passing it as a cmd line argument, `terraform plan -var "myvar=10" -var "myvar=20"`,
+then TF will stick to values that it reads the last, in this case it will stick to `myvar=20`.
+Passing vars from different sources to cmd line will look the same as repaeting the same var mltiple times.
+E.g. `terraform plan -var "myvar=10" -var-file myvars.tf`, then if myvar is in the myvars.tf file then it will be the last value TF will go with.
+
+Don't use mutiple tfvars files that can potentially override each other!
+
+### Locals
+Locals provide a way to define a variable that can be reused within your module without needing to pass it in as an input variable.
+Locals can't be set explicitly from th outside as a variable.
+Locals can be any other supported type and can be referenced by other parts of your TF config.
+Locals can be put in its own file, e.g. `locals.tf` and there's no such a thing like importing locals from another *.tf config file as long as all files are in the same directory.
+If you try to pass a value to a variable defined `local` block and if there's no reular variable in your project with the same name, you'll get an error:
+
+$ terraform plan -var 'common_tags="{bu="QAZ"}"'
+Error: Value for undeclared variable
+│
+│ A variable named "common_tags" was assigned on the command line, but the root module does not declare a variable of that name. To use this value, add a "variable" block to the configuration.
+
+In this case, `common_tags` is a local variabel and there's no regular variable with the same name, which is why TF throws an error.

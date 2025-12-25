@@ -1,0 +1,15 @@
+
+### Locals
+Locals provide a way to define a variable that can be reused within your module without needing to pass it in as an input variable.
+Locals can't be set explicitly from th outside as a variable.
+Locals can be any other supported type and can be referenced by other parts of your TF config.
+Locals can be put in its own file, e.g. `locals.tf` and there's no such a thing like importing locals from another *.tf config file as long as all files are in the same directory.
+In this exercise we created a local.tf file with some local variables. For the sake of demostration we reference regular variables within `locals` block.
+If you try to pass a value to a variable defined `local` block and if there's no reular variable in your project with the same name, you'll get an error:
+
+$ terraform plan -var 'common_tags="{bu="QAZ"}"'
+Error: Value for undeclared variable
+│
+│ A variable named "common_tags" was assigned on the command line, but the root module does not declare a variable of that name. To use this value, add a "variable" block to the configuration.
+
+In this case, `common_tags` is a local variabel and there's no regular variable with the same name, which is why TF throws an error.
