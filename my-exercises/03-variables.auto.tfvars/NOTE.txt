@@ -1,0 +1,35 @@
+### Working with *.auto.tfvars
+TF does not apply values from files with values for each variable automatically as in the previous example with dev.terraform.tfvars and prod.terraform.tfvars file.
+TF automatically finds nd reads variable values from files named as terraform.tfvars or *.auto.tfvars.
+Note that `*.auto.tfvars` will override `terraform.tfvars`. You can read more about variable precedense order in ../../08-input-vars-locals-outputs/README.md 
+
+In this example the prod.auto.tfvars files are automatically loaded by Terraform when it runs. 
+The values in the *.auto.tfvars files override the values in the terraform.tfvars file.
+This means that if you have the same variable defined in both the terraform.tfvars file and an *.auto.tfvars file, the value from the *.auto.tfvars file will be used.
+
+If you have more than 1 `*.auto.tfvars` fil ein your project directory, TF will sort the `*.auto.tfvars` filenames in alphabetical order,
+and the filename that goes first gets overriden by the file that goes after it.
+As an example, if we create 2 auto files - dev.auto.tfvars and prod.auto.tfvars files, dev filename goes first, then TF finds another auto file and it overrides the variables
+that were in dev and now in prod auto file. This is an example of how you should avoid doing.
+
+There might be another example where you have all your variables in `terraform.tfvars` file, but some of the variables are overriden in *.auto.tfvars file.
+
+e.g.
+$ cat terraform.tfvars
+instance_type = "t2.micro"
+image_id      = "11111111"
+tags = {
+	banagedBy = "TF"
+}
+
+$ cat prod.auto.tfvars
+image_id      = "77777777"
+
+If ou run terraform plan cmd you'll see that TF grabs `instance_type` and `tags` from terraform.tfvars file but `image_id` is "7777777".
+Here's how its logic works:
+- TF goes with the order of precedence from high -> low. `*.auto.tfvars` is higher than `terraform.tfvars`, it reads what it finds in it - in this case `image_id = "77777777"`.
+  There's no other variable in this file.
+- TF moves forward with checking for other variables in any other source and finds `terraform.tfvars` file, it reads every variable that TF didn't see in the revius file `*.auto.tfvars`,
+  and again, following the variable precedence order. TF reads variable `instance_type`, `tags`, but it ignores the variable `image_id` as it has seen it coming from a more preferred source - `*.auto.tfvars.`
+
+Don't use mutiple tfvars files that can potentially override each other!
