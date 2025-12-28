@@ -49,7 +49,28 @@ The body of the variable declaration can contain the following optional paramete
 
 - `validation`
      This allows you to define custom validation rules for the input variable that go beyond basic type checks, such as enforcing minimum or maximum values on a number.
+     A variable can have multiple variations.
+     Example:
+     ```
+     variable "ec2_instance_config_list" {
+       type = list(object({
+         instance_type = string
+         ami           = string
+       }))
 
+       default = []
+
+       validation {
+         condition = alltrue([for config in var.ec2_instance_config_list : contains(["t2.micro"], config.instance_type) ])
+         error_message = "Only t2.micro instances are allowed."
+       }
+
+       validation {
+         condition = alltrue([ for config in var.ec2_instance_config_list : contains(["nginx", "ubuntu"], config.ami) ])
+         error_message = "At least one of the provided \"ami\" values is not supported.\nSupported \"ami\" values: \"ubuntu\", \"nginx\"."
+       }
+     }
+     ```
 - `sensitive`
      If you set this parameter to true on an input variable, Terraform will not log it when you run plan or apply.
      You should use this on any secrets you pass into your Terraform code via variables: e.g., passwords, API keys, etc.
