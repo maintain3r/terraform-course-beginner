@@ -8,6 +8,7 @@ While they both create multiple resources they work differently and have their u
 - Must be known before Terraform performs any remote resource actions.
 - <TYPE>.<LABEL>.[<INDEX] refers to a specific instance of a resource, while <TYPE>.<LABEL> refers to the resource as a whole.
 - We can use `count.index` in the resource's arguments to retrieve the index of the specific instance.
+  Therefore `count` it's good to work with variables of type `list` when we need to get a specific item of list variable by accessing it by `count.index`.
 - The index starts from 0. For example you set count to 2, you'll create 2 instances of resources and the index will strat from 0 and stop at 1. 
   This in total gives you 2 resources. Don't confuse count=2 with index elements going like 0,1,2.
 
