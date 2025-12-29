@@ -46,9 +46,27 @@ The body of the variable declaration can contain the following optional paramete
      This allows you to enforce type constraints on the variables a user passes in.
      Terraform supports a number of type constraints, including `string, number, bool, list, map, set, object, tuple`, and `any`. 
      It’s always a good idea to define a `type` constraint to catch simple errors. If you don't specify a `type`, Terraform assumes the `type` is `any`.
+     I fyour variable is a map or an object, you can use `optional`keyword to specify one of the fields of your complex variable as optional, by setting its tpe and a default value.
+     Unlike `default` value, which works at the top level for the entire variablem `optional` allows you to specify a default value for a field witing a complex variable structure.
+     Default must:
+     - match the declared type
+     - be known at plan time
+          
+     Example:
+     ```
+     variable "service" {
+       type = object({
+       name     = string
+       port     = number
+       protocol = optional(string, "tcp")
+     })
+     }
+     ```
+     This means name and port fields are mandator fields while protocol is optional and if omitted its value will be 'tcp' .
 
 - `validation`
      This allows you to define custom validation rules for the input variable that go beyond basic type checks, such as enforcing minimum or maximum values on a number.
+     You cannot reference resources in the validation block as TF performs a validation before it modifies your infra configs.
      A variable can have multiple variations.
      Example:
      ```
