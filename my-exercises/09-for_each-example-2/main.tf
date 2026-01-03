@@ -53,40 +53,10 @@ output "users_map" {
   description = "A map containing username = > [roles]"
 }
 
-
-
-
-########
-locals {
-  role_policies = {
-    readonly = [
-      "ReadOnlyAccess"
-    ]
-    admin = [
-      "AdministratorAccess"
-    ]
-    auditor = [
-      "SecurityAudit"
-    ]
-    developer = [
-      "AmazonVPCFullAccess",
-      "AmazonEC2FullAccess",
-      "AmazonRDSFullAccess"
-    ]
-  }
-
-  role_policies_list = flatten([
-    for role, policies in local.role_policies : [
-      for policy in policies : {
-        role   = role
-        policy = policy
-      }
-    ]
-  ])
+output "referencing_resource_using_for_each" {
+  value = { for key, value in random_id.users_map_for_each_method : "resource_key_${key}" => value.hex  }
 }
 
-
-output "role_policies_list" {
-  value = local.role_policies_list
+output "referecing_single_mixer_resource_by_key" {
+  value = random_id.users_map_for_each_method["john"].dec
 }
-
