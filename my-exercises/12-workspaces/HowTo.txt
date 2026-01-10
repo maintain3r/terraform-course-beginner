@@ -1,0 +1,14 @@
+Create TF workspaces using `terraform workspace new <workspace name>`, it will automatically switch into  the new workspace
+Ceate as many workspace as you need.
+For each workspace create a .tfvars file matching the name of the workspaces you created.
+terraform workspace list - returns a list of all workspaces
+Run terraform apply -var-file=$(terraform workspace show).tfvars
+or create a Bash alias
+alias tf_apply='terraform apply -auto-approve -var-file=$(terraform workspace show).tfvars'
+$ tf_apply - will create resoruces automatically depending on which workspace you're in
+After creating resources for each workspace delete the resources and workspaces. You can delete a workspace if you're inside it, you have to switch to another one before deleting.
+If you want to delete TF workspace with resources in it before deleting the resources TF will throw an error,
+but adding `-force` key to `terraform workspace -force delete <workspace name>` will remove the workspace and the terraform.tfstate file in it.
+
+`terraform destroy -var-file=staging.tfvars` - destroy resources in current workspace
+terraform workspace delete [-force] <workspace name> deletes the workspace
