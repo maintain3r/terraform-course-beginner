@@ -1,0 +1,119 @@
+Here's how I see it:
+There's 2 types of policies - TRUST policy and PERMISSION policy.
+- TRUST policy is only specified at Role level and defines which users, accuonts, services and other entities can assume this specific role.
+- PERMISSION policy - AWS Managed or Custom defined set of actions allowed on specific resources.
+
+Now assume you create Niv user and here's how things are tied together:
+1. Create a new user Niv. New user has no permissions
+2. You create a role, say BillingAdmin that is blank by default. 
+     2.1 Every role MUST have a TRUST POLICY which defines the Action and Principal(s) that can assume the role. Action is always sts:AssumeRole.
+         Here, you specify, that Niv user can assume this role. I.e. "Principal" field of the poicy contains user Niv. Action is "sts:AssumeRole". 
+         Example TRUST policy for Role BillingAdmin:
+         {
+              "Version": "2012-10-17",
+              "Statement": [
+              {
+                  "Action": "sts:AssumeRole",
+                  "Principal": {
+                  "AWS": "arn:aws:iam::111122223333:user/Niv"
+                  },
+                  "Effect": "Allow"
+              }
+            ]
+          }
+
+     2.2 Every role has one or more PERMISSION Policies attached to it. 
+         Permission policies can be your Custom or AWS Managed. If there's no permission policy attached to a role then nothing is allowed.
+         Example PERMISSION policy, let's name it BillingAdminPolicy, and you specify Action and Resource fields where you define which operations you allow on which resources:
+         {
+             Version = "2012-10-17",
+             Statement = [
+             {
+                Effect = "Allow",
+                Action = [
+                       "s3:GetObject",
+                       "s3:ListBucket"
+                ],
+                Resource = [
+                       "arn:aws:s3:::my-bucket",
+                       "arn:aws:s3:::my-bucket/*"
+                ]
+             },
+             {
+                Effect = "Allow",
+                Action = [
+                        "ec2:RunInstances",
+                        "ec2:DescribeInstances"
+                ],
+                Resource = "*"
+             }
+           ]
+          }      
+
+         You created a PERMISSION policy which defines a set of Actions like ("s3:GetObject","s3:ListBucket") against specific Resource = ["arn:aws:s3:::my-bucket", "arn:aws:s3:::my-bucket/*" ]. 
+         This policy is abstracted from who's going to use it another role, service, a user, or anything else.
+
+3. You attach BillingAdminPolicy PERMISSION policy to role BillingAdmin. You can add more PERMISSION policies if needed - AWS Managed or Custom made.
+
+4. You return to User Niv, and create a PERMISSION policy for user Niv saying that it can assume the role BillingAdmin created in step 2.
+   You can specify more roles to assume if needed in the same document.
+   User will have "Action": "sts:AssumeRole" and Resource field pointing to the Role BillingAdmin created in step 2.
+   Example PERMISSION policy for User Niv allowing sts:AssumeRole Action on a Resource which is a BillingAdmin role:
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Resource": "arn:aws:iam::ACCOUNT_ID:role/BillingAdmin"
+      }
+     ]
+   }
+   Note: users can have a single inline policy allowing multiple roles (Resource can be a list of role ARNs).
+
+5. It's like a 2 step process with permissions on both ends - in this case user and the role.
+   sts:AssumeRole in User PERMISSION policy grants permission to that user to run AssumeRole on role BillingAdmin.
+   On the other end, BillingAdmin role's TRUST policy has its own sts:AssumeRole action that allows this role to be assumed by user Niv defined in it (step 2.1).
+   As a result, user Niv has a PERMISSION policy to assume the BillingAdmin role and when assumed, it gets access to what is defined in the PERMISSION policy attached to the role BillingAdmin.
+   After assuming the role, the user temporarily has the permissions defined by the role's permission policies, not the user's own policies.
+   Important nuance: 
+   - The user's sts:AssumeRole permission does not grant any additional permissions other than the ability to call STS (secure token services).
+   - The role's permission policy defines what the user can do after assuming the role.
+
+
+There's 3 ways of managing users in real life.
+1. 
+- You create a PERMISSION policy which allows sts:AssumeRole as an Action against specific Resources which are roles.
+- You create a group entity and attache the PERMISSION policy created above to the group.
+- Assuming you create new users and they're all have the same job duties/responsibilities, you add them into the same group created above.
+  This means they automatically inherit PERMISSION policy rules that are attached by that permission policy attached to the group.
+- Since AWS IAM does not allow Groups of users to be referenced in the TRUST policy of the Role, you have to specify each user individually in the Principal field.
+  This does not scale well but is strict way of managing user permissions.
+  Bottom Line:
+  - Very strict and secure
+  - Not scalable - every new user must be added to the role's trust policy
+  - Works well for high-security environments
+
+2.
+- You create a PERMISSION policy which allows sts:AssumeRole as an Action against specific Resources which are roles.
+- You create a group entity and attache the PERMISSION policy created above to the group.
+- Assuming you create new users and they're all have the same job duties/responsibilities, you add them into the same group created above.
+  This means they automatically inherit PERMISSION policy rules that are attached by that permission policy attached to the group.
+- AWS IAM does not allow Groups of users to be referenced in the TRUST policy of the Role.
+  To overcome this limitation you can allow here all possible users of your account: "Principal": { "AWS": "arn:aws:iam::ACCOUNT_ID:root" }.
+  Bottom Line:
+  - Scales well for multiple users
+  - Users’ permission policies (group policy) control who can actually call sts:AssumeRole
+  - Role trusts the account; group permissions restrict users → combination is both scalable and reasonably secure
+
+3.
+- You create Groups for users and attach PERMISSION policies to the groups.
+  Permission policies can be Custom made or AWS Managed.
+- Each user gets attached to its particular group and therefore gets access to what's been allowed by the PERMISSION policies attached to the Group.
+- This one is easy to implement but has its downside - when user works on a specific piece of the infra it still has access to everything that's defined in the permission policy attached to user's group.
+  The previous 2 methods are more strict as only allow a specific set of privileges on a limited set of resources thus reducing the vector of attack.
+  Bottom Line:
+  - This is the classic “everyone in a group gets direct permissions” approach
+  - Less secure because users have direct permissions; no temporary role assumption → larger attack surface
+  - Easy to implement, but less flexible for auditing and separation of duties
+

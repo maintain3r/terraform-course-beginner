@@ -51,3 +51,23 @@ module "mixer" {
   source = "./modules/mixer"
   mixer_names = local.mixer_names  
 }
+
+output "path_built_in_variables_module_view" {
+  value =  module.mixer.path_built_in_variables
+}
+
+output "path_built_in_variables_root_module_view" {
+  value = {
+    # how root module sees it
+    path_root   = path.root
+    path_module = path.module
+    absolute_root_path = abspath(path.root)
+    absolute_module_path = abspath(path.module)
+
+    # how module sees it
+    module_path_root            = module.mixer.path_built_in_variables.path_root
+    module_path_module          = module.mixer.path_built_in_variables.path_module
+    module_absolute_path_root   = abspath(module.mixer.path_built_in_variables.path_root)
+    module_absolute_path_module = abspath(module.mixer.path_built_in_variables.path_module)
+  }
+}

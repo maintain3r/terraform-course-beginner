@@ -12,6 +12,8 @@ Allow the creation of multiple resources of the same type without having to decl
 Allows defining explicitly which provider to use with a specific resource.
 This meta argument can be ued in any `resource` or `data` block.
 
+#### path.root, path.module
+
 ### Lifecycle
 The following attributes are part of `lifecycle` contruction of TF with its own purpose. 
 - #### create_before_destroy
@@ -86,3 +88,51 @@ resource "aws_launch_configuration" "example" {
   }
 }
 ```
+
+
+## path.root, path.module
+In Terraform, these path variables are designed to solve one specific problem:
+Relative paths break when you use modules.
+1. The Core Concept
+    `path.root`: Always points to the folder where you run terraform apply. Think of this as "The Project Home."
+    `path.module`: Always points to the folder where the actual .tf file is located. Think of this as "The Current File’s Home."
+
+2. Why is path.root often just '.' ?
+   `path.root` often returns '.' However, '.' does not mean "where the module is."
+    In Terraform, the "Current Working Directory" (CWD) is always the directory where you run the command.
+    If you are in /home/user/project and run terraform apply, then '.' refers to /home/user/project.
+    Even if Terraform is currently executing code inside a module located at /home/user/project/modules/network, the CWD remains the root.
+    The Benefit: If you use `path.root`, you are telling Terraform: "Look for this file relative to where I started the command," no matter how deep the module is.
+
+3. Example
+Imagine this folder structure:
+```
+/my-project
+├── main.tf           <-- (Root Module)
+├── setup.sh          <-- (A global script)
+└── /modules
+    └── /s3_bucket
+        ├── bucket.tf <-- (Child Module)
+        └── policy.json <-- (A file specific to this module)
+```
+Scenario A: Accessing a Global File (Use path.root)
+Inside modules/s3_bucket/bucket.tf, you want to upload the setup.sh file which is in the project root.
+	# WRONG: This looks inside /modules/s3_bucket/
+	source = "./setup.sh"
+
+	# RIGHT: This looks in /my-project/
+	source = "${path.root}/setup.sh"
+
+Scenario B: Accessing a Module File (Use path.module)
+Inside modules/s3_bucket/bucket.tf, you want to read policy.json located in the same folder as the module.
+	# WRONG: This looks in /my-project/ (where you ran the command)
+	policy = file("./policy.json")
+
+	# RIGHT: This looks in /my-project/modules/s3_bucket/
+	policy = file("${path.module}/policy.json")
+
+4. How to get the Absolute Path
+If you find the . confusing or if your script needs a full path (like /home/user/...), you should wrap the variable in the abspath() function:
+	# This converts "." into the full, unambiguous system path
+	`value = abspath(path.root)`
+
